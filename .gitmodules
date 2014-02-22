@@ -1,0 +1,3 @@
+[submodule "lib/oauth2testserver"]
+	path = lib/oauth2testserver
+	url = git@github.com:hufman/Oauth2TestServer.git
