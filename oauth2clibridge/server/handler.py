@@ -60,25 +60,25 @@ def results_by_access_token(results, client_secret):
 	return access_results, other_results
 
 def results_by_refresh_token(results, client_secret):
-	""" Splits results by renew token validity
-	    The first list of results have valid renew tokens
+	""" Splits results by refresh token validity
+	    The first list of results have valid refresh tokens
 	    The second list do not
 	"""
-	renew_results = []
+	refresh_results = []
 	other_results = []
 	for result in results:
 		# do we even have a token
 		if result.refresh_token is None:
 			other_results.append(result)
 		else:
-			# check encrypted renew token
+			# check encrypted refresh token
 			tok = result.refresh_token
 			decrypted = decrypt(client_secret, tok)
-			if hash_sha1_64(decrypted) != result.renew_sha1:
+			if hash_sha1_64(decrypted) != result.refresh_sha1:
 				other_results.append(result)
 			else:
-				renew_results.append(result)
-	return renew_results, other_results
+				refresh_results.append(result)
+	return refresh_results, other_results
 
 def results_by_auth_code(results):
 	""" Splits results by auth token validity
