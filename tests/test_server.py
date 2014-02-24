@@ -166,14 +166,19 @@ class TestServerManually:
 		assert_equal(code, records[0].auth_code)
 
 	def load_authcode(self):
+		""" Do everything to get the auth code """
 		ret = self.handler.token(self.args)
+		self.oauth2_authorize()
+
+	def oauth2_authorize(self):
+		""" Visits the test oauth2 server, which will then
+		    redirect back with auth code
+		"""
+		# get link to oauth2 server
 		records = self.handler.get_records(self.args['client_id'])
 		url = self.handler.make_auth_uri(records[0])
-		parsed_url = urlparse.urlparse(url)
-		qs = urlparse.parse_qs(parsed_url.query)
-		state = qs['state'][0]
 
-		# get auth code
+		# user authorization
 		resp = requests.get(url, allow_redirects=False)
 		parsed_url = urlparse.urlparse(resp.headers['Location'])
 		qs = urlparse.parse_qs(parsed_url.query)
@@ -320,3 +325,129 @@ class TestServerManually:
 		assert_equal(None, record.auth_code, "No auth code")
 		assert_equal(None, record.refresh_token, "No refresh token")
 		assert_equal(None, record.access_token, "No access token")
+
+	def test_token_flow(self):
+		self.handler.token(self.args)	# creates record
+		self.oauth2_authorize()		# user authorization
+		self.handler.token(self.args)	# should tradein auth code
+
+		# check status
+		records = self.handler.get_records(self.args['client_id'])
+		assert_equal(1, len(records))
+		record = records[0]
+		# has all the tokens
+		assert_not_equal(None, record.auth_code)
+		assert_not_equal(None, record.refresh_token)
+		assert_not_equal(None, record.access_token)
+		# access token works
+		access_token_data = handler.access_token(record, self.args['client_secret'])
+		access_token = access_token_data['access_token']
+		assert_true(self.validate_access(access_token))
+
+	def test_token_flow_invalid_client(self):
+		self.handler.token(self.args)	# creates record
+		self.oauth2_authorize()		# user authorization
+		resp = requests.delete('http://127.0.0.1:9873/client', data=self.args)
+		self.handler.token(self.args)	# should zero out auth code
+
+		# check status
+		records = self.handler.get_records(self.args['client_id'])
+		assert_equal(1, len(records))
+		record = records[0]
+		# has all the tokens
+		assert_equal(None, record.auth_code)
+		assert_equal(None, record.refresh_token)
+		assert_equal(None, record.access_token)
+
+	def test_token_flow_missing_authcode(self):
+		self.handler.token(self.args)	# creates record
+		self.oauth2_authorize()		# user authorization
+		del testserver_store.client_auth[self.args['client_id']]
+		self.handler.token(self.args)	# should zero out auth code
+
+		# check status
+		records = self.handler.get_records(self.args['client_id'])
+		assert_equal(1, len(records))
+		record = records[0]
+		# has all the tokens
+		assert_equal(None, record.auth_code)
+		assert_equal(None, record.refresh_token)
+		assert_equal(None, record.access_token)
+
+	def test_token_flow_invalid_authcode(self):
+		self.handler.token(self.args)	# creates record
+		self.oauth2_authorize()		# user authorization
+		testserver_store.client_auth[self.args['client_id']] = "INVALID!!!"
+		self.handler.token(self.args)	# should zero out auth code
+
+		# check status
+		records = self.handler.get_records(self.args['client_id'])
+		assert_equal(1, len(records))
+		record = records[0]
+		# has all the tokens
+		assert_equal(None, record.auth_code)
+		assert_equal(None, record.refresh_token)
+
+	def test_token_flow_refresh(self):
+		self.handler.token(self.args)	# creates record
+		self.oauth2_authorize()		# user authorization
+		self.handler.token(self.args)	# should tradein auth code
+		record = self.handler.get_records(self.args['client_id'])[0]
+		record.auth_code = None
+		record.access_token = None
+		self.handler.token(self.args)	# should tradein refresh code
+
+		# check status
+		records = self.handler.get_records(self.args['client_id'])
+		assert_equal(1, len(records))
+		record = records[0]
+		# has all the tokens
+		assert_equal(None, record.auth_code)
+		assert_not_equal(None, record.refresh_token)
+		assert_not_equal(None, record.access_token)
+		# access token works
+		access_token_data = handler.access_token(record, self.args['client_secret'])
+		access_token = access_token_data['access_token']
+		assert_true(self.validate_access(access_token))
+
+	def test_token_flow_missing_refresh(self):
+		self.handler.token(self.args)	# creates record
+		self.oauth2_authorize()		# user authorization
+		self.handler.token(self.args)	# gets refresh and access tokens
+		del testserver_store.client_refresh[self.args['client_id']]
+		record = self.handler.get_records(self.args['client_id'])[0]
+		record.access_token = None
+		# auth code has already been deleted, make a new one
+		self.oauth2_authorize()		# user authorization
+		self.handler.token(self.args)	# should try refresh code, fail and use auth
+
+		# check status
+		records = self.handler.get_records(self.args['client_id'])
+		assert_equal(1, len(records))
+		record = records[0]
+		# has all the tokens
+		assert_not_equal(None, record.auth_code)
+		assert_not_equal(None, record.refresh_token)
+		assert_not_equal(None, record.access_token)
+		access_token_data = handler.access_token(record, self.args['client_secret'])
+		access_token = access_token_data['access_token']
+		assert_true(self.validate_access(access_token))
+
+	def test_token_flow_missing_auth_and_refresh(self):
+		self.handler.token(self.args)	# creates record
+		self.oauth2_authorize()		# user authorization
+		self.handler.token(self.args)	# gets refresh and access tokens
+		del testserver_store.client_refresh[self.args['client_id']]
+		record = self.handler.get_records(self.args['client_id'])[0]
+		record.access_token = None
+		record.auth_token = None
+		self.handler.token(self.args)	# should fail refresh and auth
+
+		# check status
+		records = self.handler.get_records(self.args['client_id'])
+		assert_equal(1, len(records))
+		record = records[0]
+		# has all the tokens
+		assert_equal(None, record.auth_code)
+		assert_equal(None, record.refresh_token)
+		assert_equal(None, record.access_token)
