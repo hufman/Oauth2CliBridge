@@ -67,7 +67,7 @@ class TestServerManually:
 
 	@staticmethod
 	def validate_access(access_token):
-		validate_url = 'http://127.0.0.1:9873/validate?token=%s'%(urllib.quote(access_token),)
+		validate_url = 'http://127.0.0.1:9873/validate?access_token=%s'%(urllib.quote(access_token),)
 		resp = requests.get(validate_url)
 		if int(resp.status_code / 100) == 2:
 			return True
