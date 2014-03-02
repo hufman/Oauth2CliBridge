@@ -224,7 +224,7 @@ class TestServerManually:
 		self.load_authcode()
 
 		# delete client auth code
-		del testserver_store.client_auth[self.args['client_id']]
+		requests.delete('http://127.0.0.1:9873/auth', data={'client_id':self.args['client_id']})
 
 		# trade in auth code
 		records = self.handler.get_records(self.args['client_id'])
@@ -289,7 +289,7 @@ class TestServerManually:
 		assert_true(self.validate_access(access_token))
 
 		# invalidate client
-		del testserver_store.client_refresh[self.args['client_id']]
+		requests.delete('http://127.0.0.1:9873/refreshtoken', data={'client_id':self.args['client_id']})
 
 		# clear out the tokens and try refresh
 		record.auth_code = None
@@ -362,7 +362,7 @@ class TestServerManually:
 	def test_token_flow_missing_authcode(self):
 		self.handler.token(self.args)	# creates record
 		self.oauth2_authorize()		# user authorization
-		del testserver_store.client_auth[self.args['client_id']]
+		requests.delete('http://127.0.0.1:9873/auth', data={'client_id':self.args['client_id']})
 		self.handler.token(self.args)	# should zero out auth code
 
 		# check status
@@ -414,7 +414,7 @@ class TestServerManually:
 		self.handler.token(self.args)	# creates record
 		self.oauth2_authorize()		# user authorization
 		self.handler.token(self.args)	# gets refresh and access tokens
-		del testserver_store.client_refresh[self.args['client_id']]
+		requests.delete('http://127.0.0.1:9873/refreshtoken', data={'client_id':self.args['client_id']})
 		record = self.handler.get_records(self.args['client_id'])[0]
 		record.access_token = None
 		# auth code has already been deleted, make a new one
@@ -437,7 +437,7 @@ class TestServerManually:
 		self.handler.token(self.args)	# creates record
 		self.oauth2_authorize()		# user authorization
 		self.handler.token(self.args)	# gets refresh and access tokens
-		del testserver_store.client_refresh[self.args['client_id']]
+		requests.delete('http://127.0.0.1:9873/refreshtoken', data={'client_id':self.args['client_id']})
 		record = self.handler.get_records(self.args['client_id'])[0]
 		record.access_token = None
 		record.auth_token = None
