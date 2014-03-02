@@ -238,7 +238,7 @@ class Oauth2Handler():
 		ready_results, good_results = results_by_access_token(good_results, client_secret)
 		for result in ready_results:
 			data = access_token(result, client_secret)
-			if data != None:
+			if data != None and not args.get('force_new_access',False):
 				logger.info("Found valid access token for "+client_id)
 				return data
 			else:

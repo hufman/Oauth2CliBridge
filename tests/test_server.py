@@ -344,6 +344,39 @@ class TestServerManually:
 		access_token = access_token_data['access_token']
 		assert_true(self.validate_access(access_token))
 
+	def test_token_force_refresh(self):
+		self.handler.token(self.args)	# creates record
+		self.oauth2_authorize()		# user authorization
+		self.handler.token(self.args)	# should tradein auth code
+
+		# check status
+		records = self.handler.get_records(self.args['client_id'])
+		assert_equal(1, len(records))
+		record = records[0]
+		# has all the tokens
+		assert_not_equal(None, record.auth_code)
+		assert_not_equal(None, record.refresh_token)
+		assert_not_equal(None, record.access_token)
+		# access token works
+		access_token_data = handler.access_token(record, self.args['client_secret'])
+		access_token = access_token_data['access_token']
+		assert_true(self.validate_access(access_token))
+		# try getting access token again
+		self.handler.token(self.args)	# should get previous access
+		access_token_data = handler.access_token(record, self.args['client_secret'])
+		assert_equal(access_token, access_token_data['access_token'])
+		# try getting access token again
+		self.args['force_new_access'] = True
+		self.handler.token(self.args)	# should get previous access
+		access_token_data = handler.access_token(record, self.args['client_secret'])
+		assert_not_equal(access_token, access_token_data['access_token'])
+		# try getting access token again without refresh
+		requests.delete('http://127.0.0.1:9873/refreshtoken', data={'client_id':self.args['client_id']})
+		self.handler.token(self.args)	# should await user input
+		assert_equal(None, record.auth_code)
+		assert_equal(None, record.refresh_token)
+		assert_equal(None, record.access_token)
+
 	def test_token_flow_invalid_client(self):
 		self.handler.token(self.args)	# creates record
 		self.oauth2_authorize()		# user authorization
@@ -447,7 +480,7 @@ class TestServerManually:
 		records = self.handler.get_records(self.args['client_id'])
 		assert_equal(1, len(records))
 		record = records[0]
-		# has all the tokens
+		# has no the tokens
 		assert_equal(None, record.auth_code)
 		assert_equal(None, record.refresh_token)
 		assert_equal(None, record.access_token)
