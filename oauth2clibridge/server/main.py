@@ -7,6 +7,7 @@ from jinja2 import Markup
 import urllib
 import urlparse
 
+import os
 import sys
 from os.path import dirname, join
 sys.path.insert(0, join(dirname(__file__), '..', '..'))
@@ -20,6 +21,8 @@ try:
 	app.config.from_pyfile('localsettings.py')
 except:
 	pass
+if 'DEBUG' in os.environ:
+	app.config['DEBUG'] = True if os.environ['DEBUG'] in ['True','true'] else False
 
 # Database interactions
 engine = create_engine(app.config['DATABASE_URI'], echo=app.config['DEBUG'])
