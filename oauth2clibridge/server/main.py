@@ -74,7 +74,7 @@ def token():
 	ret = request.oauth2.token(request.form)
 	if ret == None:		# new token session is ready
 		url = abs_url_for('main', client_id=request.form['client_id'])
-		return "Please visit %s"%(url,), 401
+		return "Please visit %s"%(url,), 401, {'Location':url}
 	if isinstance(ret, tuple):	# some sort of other error
 		return ret
 	return jsonify(ret)		# proper token
@@ -97,7 +97,6 @@ def filter_not_blank(s):
 @app.template_filter('try_auth')
 def filter_try_auth(s):
 	return Markup(url_for("try_auth", id=int(s.id), csrf=s.csrf))
-
 
 if __name__ == '__main__':
 	app.run(host='0.0.0.0')
