@@ -72,10 +72,12 @@ def callback():
 @app.route('/token', methods=['POST'])
 def token():
 	ret = request.oauth2.token(request.form)
-	if ret == None:
+	if ret == None:		# new token session is ready
 		url = abs_url_for('main', client_id=request.form['client_id'])
 		return "Please visit %s"%(url,), 401
-	return jsonify(ret)
+	if isinstance(ret, tuple):	# some sort of other error
+		return ret
+	return jsonify(ret)		# proper token
 
 # Template stuff
 def abs_url_for(name, *args, **kwargs):
