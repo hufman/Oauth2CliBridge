@@ -344,6 +344,62 @@ class TestServerManually:
 		access_token = access_token_data['access_token']
 		assert_true(self.validate_access(access_token))
 
+	def test_token_flow_repeat(self):
+		self.handler.token(self.args)	# creates record
+		self.oauth2_authorize()		# user authorization
+		self.handler.token(self.args)	# should tradein auth code
+
+		# check status
+		records = self.handler.get_records(self.args['client_id'])
+		assert_equal(1, len(records))
+		record = records[0]
+		# has all the tokens
+		assert_not_equal(None, record.auth_code)
+		assert_not_equal(None, record.refresh_token)
+		assert_not_equal(None, record.access_token)
+		# access token works
+		access_token_data = handler.access_token(record, self.args['client_secret'])
+		access_token = access_token_data['access_token']
+		assert_true(self.validate_access(access_token))
+
+		# get it again
+		self.handler.token(self.args)	# should tradein auth code
+		# check status
+		records = self.handler.get_records(self.args['client_id'])
+		assert_equal(1, len(records))
+		record = records[0]
+		# has all the tokens
+		assert_not_equal(None, record.auth_code)
+		assert_not_equal(None, record.refresh_token)
+		assert_not_equal(None, record.access_token)
+		# access token works
+		access_token_data2 = handler.access_token(record, self.args['client_secret'])
+		access_token2 = access_token_data2['access_token']
+		assert_equal(access_token, access_token2)
+		assert_true(self.validate_access(access_token2))
+
+
+	def test_token_missing_expiration(self):
+		self.handler.token(self.args)	# creates record
+		self.oauth2_authorize()		# user authorization
+		self.handler.token(self.args)	# should tradein auth code
+		record = self.handler.get_records(self.args['client_id'])[0]
+		record.access_exp = None	# pretend we never got one
+		self.handler.token(self.args)	# should use the same one
+
+		# check status
+		records = self.handler.get_records(self.args['client_id'])
+		assert_equal(1, len(records))
+		record = records[0]
+		# has all the tokens
+		assert_not_equal(None, record.auth_code)
+		assert_not_equal(None, record.refresh_token)
+		assert_not_equal(None, record.access_token)
+		# access token works
+		access_token_data = handler.access_token(record, self.args['client_secret'])
+		access_token = access_token_data['access_token']
+		assert_true(self.validate_access(access_token))
+
 	def test_token_force_refresh(self):
 		self.handler.token(self.args)	# creates record
 		self.oauth2_authorize()		# user authorization

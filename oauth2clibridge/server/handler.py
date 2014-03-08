@@ -53,7 +53,8 @@ def results_by_access_token(results, client_secret):
 				other_results.append(result)
 			else:
 				# check token expiration
-				if result.access_exp - time.time() < 300:
+				if result.access_exp and \
+				   result.access_exp - time.time() < 300:
 					# will expire in less than 5 minutes
 					other_results.append(result)
 				else:
@@ -99,11 +100,15 @@ def results_by_auth_code(results):
 def access_token(record, client_secret):
 	access_token = decrypt(client_secret, record.access_token)
 	if hash_sha1_64(access_token) == record.access_sha1:
-		return {
+		token = {
 		    "access_token": access_token,
-		    "expires_in": int(record.access_exp - time.time()),
 		    "token_type": record.access_token_type
 		}
+		if record.access_exp:
+			token['expires_in'] = int(record.access_exp - time.time())
+		else:
+			token['expires_in'] = 600	# 10 minute default
+		return token
 	else:
 		return None
 
