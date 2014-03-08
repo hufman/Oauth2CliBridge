@@ -203,7 +203,7 @@ class TestServerManually:
 		records = self.handler.get_records(self.args['client_id'])
 		record = records[0]
 		self.handler.tradein_auth_code(record, self.args['client_secret'])
-		assert_equal(self.auth_code, record.auth_code, "Didn't clear auth_code")
+		assert_equal(None, record.auth_code, "Cleared auth_code")
 		assert_not_equal(None, record.refresh_token, "Has refresh token")
 		assert_not_equal(None, record.access_token, "Has access token")
 		access_token_data = handler.access_token(record, self.args['client_secret'])
@@ -343,7 +343,7 @@ class TestServerManually:
 		assert_equal(1, len(records))
 		record = records[0]
 		# has all the tokens
-		assert_not_equal(None, record.auth_code)
+		assert_equal(None, record.auth_code)
 		assert_not_equal(None, record.refresh_token)
 		assert_not_equal(None, record.access_token)
 		# access token works
@@ -361,7 +361,7 @@ class TestServerManually:
 		assert_equal(1, len(records))
 		record = records[0]
 		# has all the tokens
-		assert_not_equal(None, record.auth_code)
+		assert_equal(None, record.auth_code)
 		assert_not_equal(None, record.refresh_token)
 		assert_not_equal(None, record.access_token)
 		# access token works
@@ -376,7 +376,7 @@ class TestServerManually:
 		assert_equal(1, len(records))
 		record = records[0]
 		# has all the tokens
-		assert_not_equal(None, record.auth_code)
+		assert_equal(None, record.auth_code)
 		assert_not_equal(None, record.refresh_token)
 		assert_not_equal(None, record.access_token)
 		# access token works
@@ -399,7 +399,7 @@ class TestServerManually:
 		assert_equal(1, len(records))
 		record = records[0]
 		# has all the tokens
-		assert_not_equal(None, record.auth_code)
+		assert_equal(None, record.auth_code)
 		assert_not_equal(None, record.refresh_token)
 		assert_not_equal(None, record.access_token)
 		# access token works
@@ -417,7 +417,7 @@ class TestServerManually:
 		assert_equal(1, len(records))
 		record = records[0]
 		# has all the tokens
-		assert_not_equal(None, record.auth_code)
+		assert_equal(None, record.auth_code)
 		assert_not_equal(None, record.refresh_token)
 		assert_not_equal(None, record.access_token)
 		# access token works
@@ -522,7 +522,7 @@ class TestServerManually:
 		assert_equal(1, len(records))
 		record = records[0]
 		# has all the tokens
-		assert_not_equal(None, record.auth_code)
+		assert_equal(None, record.auth_code)
 		assert_not_equal(None, record.refresh_token)
 		assert_not_equal(None, record.access_token)
 		access_token_data = handler.access_token(record, self.args['client_secret'])

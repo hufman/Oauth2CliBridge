@@ -163,6 +163,7 @@ class Oauth2Handler():
 			"code": record.auth_code, "grant_type": "authorization_code"}
 		logger.debug("Auth code info: %s"%(data,))
 		r = requests.post(record.token_uri, data=data)
+		record.auth_code = None
 		if int(r.status_code / 100) == 2:
 			try:
 				token_data = r.json()
@@ -174,7 +175,6 @@ class Oauth2Handler():
 		if token_data is not None and 'error' not in token_data:
 			self.parse_access_token(record, client_secret, token_data)
 		else:
-			record.auth_code = None
 			record.refresh_token = None
 			record.refresh_sha1 = None
 			record.access_token = None
