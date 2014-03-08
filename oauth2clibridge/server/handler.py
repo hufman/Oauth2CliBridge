@@ -208,7 +208,11 @@ class Oauth2Handler():
 
 	def get_records(self, client_id):
 		query = self.db.query(Oauth2Record)
-		results = [x for x in query]
+		if client_id:
+			query = query.filter(Oauth2Record.client_id == client_id)
+			results = [x for x in query]
+		else:
+			results = []
 		return results
 
 	def get_record(self, id, csrf):
