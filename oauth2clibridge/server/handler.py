@@ -159,9 +159,9 @@ class Oauth2Handler():
 		logger.debug("Auth code info: %s"%(data,))
 		r = requests.post(record.token_uri, data=data)
 		if int(r.status_code / 100) == 2:
-			if 'json' in r.headers['Content-Type']:
+			try:
 				token_data = r.json()
-			else:
+			except ValueError as e:
 				token_data = urlparse.parse_qs(r.text)
 				token_data = dict([(k,v[0]) for k,v in token_data.items()])
 		else:
