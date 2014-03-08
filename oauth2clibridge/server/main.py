@@ -13,6 +13,7 @@ from os.path import dirname, join
 sys.path.insert(0, join(dirname(__file__), '..', '..'))
 
 import oauth2clibridge.server.models as models
+import oauth2clibridge.server.handler as handler
 from oauth2clibridge.server.handler import Oauth2Handler
 
 app = Flask(__name__)
@@ -23,9 +24,11 @@ except:
 	pass
 if 'DEBUG' in os.environ:
 	app.config['DEBUG'] = True if os.environ['DEBUG'] in ['True','true'] else False
+handler.logger = app.logger
 
 # Database interactions
-engine = create_engine(app.config['DATABASE_URI'], echo=app.config['DEBUG'])
+DEBUG_DB = False
+engine = create_engine(app.config['DATABASE_URI'], echo=DEBUG_DB)
 db_session = scoped_session(sessionmaker(bind=engine))
 
 def create_db():
