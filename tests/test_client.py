@@ -80,7 +80,7 @@ class TestClientManually:
 	@staticmethod
 	def click_auth(url):
 		r = requests.get(url, verify=False)
-		linkre = re.compile('<a\s+href="(.*?)"')
+		linkre = re.compile('<a\s+href="(.*?try_auth.*?)"')
 		match = linkre.search(r.text)
 		if match:
 			link = match.group(1)

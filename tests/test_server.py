@@ -165,6 +165,13 @@ class TestServerManually:
 		assert_equal(1, len(records))
 		assert_equal(code, records[0].auth_code)
 
+	def test_delete_authcode(self):
+		ret = self.handler.token(self.args)
+		record = self.handler.get_records(self.args['client_id'])[0]
+		self.handler.delete_record(record)
+		records = self.handler.get_records(self.args['client_id'])
+		assert_equal(0, len(records))
+
 	def load_authcode(self):
 		""" Do everything to get the auth code """
 		ret = self.handler.token(self.args)

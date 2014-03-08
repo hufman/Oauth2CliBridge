@@ -60,6 +60,16 @@ def try_auth(id):
 	if result == None:
 		return "Invalid id or csrf", 401
 	return redirect(request.oauth2.make_auth_uri(result))
+@app.route("/delete/<int:id>")
+def delete(id):
+	if not 'csrf' in request.args:
+		return "Missing csrf argument", 401
+	result = request.oauth2.get_record(id,request.args['csrf'])
+	if result == None:
+		return "Invalid id or csrf", 401
+	client_id = result.client_id
+	request.oauth2.delete_record(result)
+	return redirect(abs_url_for('main', client_id=client_id))
 
 @app.route('/oauth2callback')
 def callback():
@@ -97,9 +107,12 @@ def filter_not_blank(s):
 	if s is None:
 		return ''
 	return s
-@app.template_filter('try_auth')
+@app.template_filter('cmd_try_auth')
 def filter_try_auth(s):
 	return Markup(url_for("try_auth", id=int(s.id), csrf=s.csrf))
+@app.template_filter('cmd_delete')
+def filter_delete(s):
+	return Markup(url_for("delete", id=int(s.id), csrf=s.csrf))
 
 if __name__ == '__main__':
 	app.run(host='0.0.0.0')

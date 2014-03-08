@@ -9,12 +9,13 @@
 <table class="table">
 <thead>
 <tr>
-<td>Client ID</td><td>Auth URI</td><td>Name</td><td>Scopes</td>
+<td>Client ID</td><td>Auth URI</td><td>Name</td><td>Scopes</td><td>Commands</td>
 </tr>
 </thead>
 {% for x in oauth2 | authorized_oauth2 %}
 <tr>
 <td>{{x.client_id}}</td><td>{{x.auth_uri}}</td><td>{{x.name | not_blank}}</td><td>{{x.scope}}</td>
+<td><a href="{{x | cmd_delete}}">Delete</a></td>
 </tr>
 {% endfor %}
 </table>
@@ -22,13 +23,13 @@
 <table class="table">
 <thead>
 <tr>
-<td>Client ID</td><td>Auth URI</td><td>Name</td><td>Scopes</td><td>Auth</td>
+<td>Client ID</td><td>Auth URI</td><td>Name</td><td>Scopes</td><td>Commands</td>
 </tr>
 </thead>
 {% for x in oauth2 | unauthorized_oauth2 %}
 <tr>
 <td>{{x.client_id}}</td><td>{{x.auth_uri}}</td><td>{{x.name | not_blank}}</td><td>{{x.scope}}</td>
-<td><a href="{{x | try_auth}}">Auth</a></td>
+<td><a href="{{x | cmd_try_auth}}">Auth</a> <a href="{{x | cmd_delete}}">Delete</a></td>
 </tr>
 {% endfor %}
 </table>

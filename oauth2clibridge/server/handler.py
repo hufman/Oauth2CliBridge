@@ -217,6 +217,10 @@ class Oauth2Handler():
 		query = query.filter(Oauth2Record.csrf==csrf)
 		return query.first()
 
+	def delete_record(self, record):
+		self.db.delete(record)
+		self.db.commit()
+
 	def store_auth_code(self, id, csrf, auth_code):
 		query = self.db.query(Oauth2Record)
 		query = query.filter(Oauth2Record.id==id)
