@@ -5,6 +5,7 @@ import time
 import string
 import random
 import urllib
+import urlparse
 
 import sys
 from os.path import dirname, join
@@ -158,7 +159,11 @@ class Oauth2Handler():
 		logger.debug("Auth code info: %s"%(data,))
 		r = requests.post(record.token_uri, data=data)
 		if int(r.status_code / 100) == 2:
-			token_data = r.json()
+			if 'json' in r.headers['Content-Type']:
+				token_data = r.json()
+			else:
+				token_data = urlparse.parse_qs(r.text)
+				token_data = dict([(k,v[0]) for k,v in token_data.items()])
 		else:
 			token_data = None
 		if token_data is not None and 'error' not in token_data:
@@ -177,8 +182,14 @@ class Oauth2Handler():
 		logger.info("Received access token for "+record.client_id)
 		record.access_token = encrypt(client_secret, token_data['access_token'])
 		record.access_sha1 = hash_sha1_64(token_data['access_token'])
-		record.access_exp = time.time() + token_data['expires_in']
-		record.access_token_type = token_data['token_type']
+		if 'expires_in' in token_data:		# required per spec
+			record.access_exp = time.time() + int(token_data['expires_in'])
+		if 'expires' in token_data:		# facebook is wrong
+			record.access_exp = time.time() + int(token_data['expires'])
+		if 'token_type' in token_data:		# required per spec
+			record.access_token_type = token_data['token_type']
+		else:
+			record.access_token_type = 'Bearer'
 		self.db.commit()
 		if 'refresh_token' in token_data:
 			self.parse_refresh_token(record, client_secret, token_data)
