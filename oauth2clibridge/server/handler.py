@@ -201,6 +201,8 @@ class Oauth2Handler():
 			record.access_token_type = token_data['token_type']
 		else:
 			record.access_token_type = 'Bearer'
+		if urlparse.urlparse(record.token_uri).netloc == 'graph.facebook.com':
+			self.parse_facebook_token(record, client_secret, token_data)
 		self.db.commit()
 		if 'refresh_token' in token_data:
 			self.parse_refresh_token(record, client_secret, token_data)
@@ -211,6 +213,38 @@ class Oauth2Handler():
 			record.refresh_token = encrypt(client_secret, token_data['refresh_token'])
 			record.refresh_sha1 = hash_sha1_64(token_data['refresh_token'])
 			self.db.commit()
+
+	def parse_facebook_token(self, record, client_secret, token_data):
+		access = token_data['access_token']
+		params = {'input_token':access, 'access_token':access}
+		resp = requests.get('https://graph.facebook.com/debug_token', params=params)
+		if resp.status_code == 200 and \
+		   'data' in resp.json():
+			if 'issued_at' not in resp.json()['data']:
+				# received short token, get a long one
+				params = {'grant_type':'fb_exchange_token',
+					  'client_id':record.client_id,
+					  'client_secret':client_secret,
+					  'fb_exchange_token':access}
+				resp = requests.get('https://graph.facebook.com/oauth/access_token', params=params)
+				token_data = urlparse.parse_qs(rres.text)
+				token_data = dict([(k,v[0]) for k,v in token_data.items()])
+				if token_data is not None and 'error' not in token_data:
+					logger.info("Traded up to long-lived FB token for "+client_id)
+					self.parse_access_token(record, client_secret, token_data)
+				else:
+					record.refresh_token = None
+					record.refresh_sha1 = None
+					record.access_token = None
+					record.access_sha1 = None
+					record.access_exp = None
+			else:
+				# already have long-lived token
+				logger.info("Already have long-lived FB token for "+record.client_id)
+				pass
+		else:
+			# error while loading page
+			logger.warning('Failed to load info about Facebook token:\n'+resp.text())
 
 	def get_records(self, client_id):
 		query = self.db.query(Oauth2Record)
