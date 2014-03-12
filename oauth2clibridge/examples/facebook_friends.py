@@ -35,7 +35,7 @@ while client == None:
 		client = BridgeClient(clibridge, appid, appsecret,
 		                      'https://www.facebook.com/dialog/oauth',
 		                      'https://graph.facebook.com/oauth/access_token',
-		                      'read_friendlists', verify=verify)
+		                      'read_friendlists', name='Facebook CLI Test', verify=verify)
 	except NeedsAuthentication as e:
 		print("Please visit %s and authorize this application"%(e.location,))
 		print("Press enter to continue when ready")

@@ -13,13 +13,14 @@ class NeedsAuthentication(Exception):
 
 class BridgeClient(object):
 	def __init__(self, bridge_uri, client_id, client_secret, \
-	             auth_uri, token_uri, scope, verify=True):
+	             auth_uri, token_uri, scope, name=None, verify=True):
 		self.bridge_uri = bridge_uri
 		self.client_id = client_id
 		self.client_secret = client_secret
 		self.auth_uri = auth_uri
 		self.token_uri = token_uri
 		self.scope = scope
+		self.name = name
 		self.verify = verify
 		self.access_token = None
 		self.expiration = None
@@ -31,7 +32,8 @@ class BridgeClient(object):
 		             'client_secret':self.client_secret,
 		             'auth_uri':self.auth_uri,
 		             'token_uri':self.token_uri,
-		             'scope':self.scope
+		             'scope':self.scope,
+		             'name':self.name
 		}
 		if force:
 			post_data['force_new_access'] = 1
