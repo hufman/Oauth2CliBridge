@@ -167,20 +167,22 @@ class Oauth2Handler():
 		data = {"client_id": record.client_id, "client_secret": client_secret, \
 			"redirect_uri": redirect_uri, \
 			"code": record.auth_code, "grant_type": "authorization_code"}
-		logger.debug("Auth code info: %s"%(data,))
 		r = requests.post(record.token_uri, data=data)
 		record.auth_code = None
 		if int(r.status_code / 100) == 2:
+			logger.debug("Successfully received access info for %s"%(record.client_id,))
 			try:
 				token_data = r.json()
 			except ValueError as e:
 				token_data = urlparse.parse_qs(r.text)
 				token_data = dict([(k,v[0]) for k,v in token_data.items()])
 		else:
+			logger.warning("Errored response for access info for %s:\n%s"%(record.client_id,r.text))
 			token_data = None
 		if token_data is not None and 'error' not in token_data:
 			self.parse_access_token(record, client_secret, token_data)
 		else:
+			logger.warning("Errored response for access info for %s:\n%s"%(record.client_id,r.text))
 			record.refresh_token = None
 			record.refresh_sha1 = None
 			record.access_token = None
@@ -195,11 +197,14 @@ class Oauth2Handler():
 		record.access_sha1 = hash_sha1_64(token_data['access_token'])
 		if 'expires_in' in token_data:		# required per spec
 			record.access_exp = time.time() + int(token_data['expires_in'])
-		if 'expires' in token_data:		# facebook is wrong
+		elif 'expires' in token_data:		# facebook is wrong
 			record.access_exp = time.time() + int(token_data['expires'])
+		else:
+			logger.debug("Strange, access token is missing expiration")
 		if 'token_type' in token_data:		# required per spec
 			record.access_token_type = token_data['token_type']
 		else:
+			logger.debug("Access token is missing token_type, assuming Bearer")
 			record.access_token_type = 'Bearer'
 		if urlparse.urlparse(record.token_uri).netloc == 'graph.facebook.com':
 			self.parse_facebook_token(record, client_secret, token_data)
