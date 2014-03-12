@@ -101,10 +101,10 @@ def abs_url_for(name, *args, **kwargs):
 	return urlparse.urljoin(app.config['URL'], url)
 @app.template_filter('authorized_oauth2')
 def filter_authorized(s):
-	return [x for x in s if x.auth_code is not None]
+	return [x for x in s if x.auth_code is not None or x.access_token is not None]
 @app.template_filter('unauthorized_oauth2')
 def filter_unauthorized(s):
-	return [x for x in s if x.auth_code is None]
+	return [x for x in s if x.auth_code is None and x.access_token is None]
 @app.template_filter('not_blank')
 def filter_not_blank(s):
 	if s is None:
