@@ -50,12 +50,14 @@ def results_by_access_token(results, client_secret):
 			tok = result.access_token
 			decrypted = decrypt(client_secret, tok)
 			if hash_sha1_64(decrypted) != result.access_sha1:
+				logger.debug("Invalidated %s because of invalid access checksum"%(result.id,))
 				other_results.append(result)
 			else:
 				# check token expiration
 				if result.access_exp and \
 				   result.access_exp - time.time() < 300:
 					# will expire in less than 5 minutes
+					logger.debug("Invalidated %s because it will expire in less than 5 minutes: %s"%(result.id,result.access_exp - time.time()))
 					other_results.append(result)
 				else:
 					access_results.append(result)
@@ -98,6 +100,9 @@ def results_by_auth_code(results):
 	return auth_results, other_results
 
 def access_token(record, client_secret):
+	""" Loads up an access_token from the database
+	    The resulting object can be returned to the client
+	"""
 	access_token = decrypt(client_secret, record.access_token)
 	if hash_sha1_64(access_token) == record.access_sha1:
 		token = {
@@ -110,6 +115,7 @@ def access_token(record, client_secret):
 			token['expires_in'] = 600	# 10 minute default
 		return token
 	else:
+		logger.info("Invalid access checksum in database")
 		return None
 
 # Oauth2 request handling
@@ -262,11 +268,20 @@ class Oauth2Handler():
 		ready_results, good_results = results_by_access_token(good_results, client_secret)
 		for result in ready_results:
 			data = access_token(result, client_secret)
-			if data != None and not args.get('force_new_access',False):
+			forced = args.get('force_new_access','False')
+			forced = forced.lower() not in ['0','false','no','none']
+			if data != None and not forced:
 				logger.info("Found valid access token for "+client_id)
 				return data
 			else:
+				if data == None:
+					logger.debug("Found invalid access token for "+client_id)
+				elif forced:
+					logger.debug("Forced refresh from "+client_id)
+				else:
+					logger.debug("Unusual access circumstances from "+client_id)
 				good_results.append(result)
+
 
 		# refresh any tokens if we can
 		refresh_results, good_results = results_by_refresh_token(good_results, client_secret)
