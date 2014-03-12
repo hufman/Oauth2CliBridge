@@ -1,5 +1,6 @@
 import requests
 import json
+import time
 from . import _requests
 
 class NeedsAuthentication(Exception):
@@ -21,6 +22,7 @@ class BridgeClient(object):
 		self.scope = scope
 		self.verify = verify
 		self.access_token = None
+		self.expiration = None
 
 		self.load_access_token()
 
@@ -39,6 +41,8 @@ class BridgeClient(object):
 		if int(handle.status_code/100) == 2:
 			data = handle.json()
 			self.access_token = data['access_token']
+			if 'expires_in' in data:
+				self.expiration = time.time() + int(data['expires_in'])
 		elif handle.status_code == 400:
 			raise KeyError(handle.text)
 		else:
