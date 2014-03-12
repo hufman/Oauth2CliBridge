@@ -26,14 +26,15 @@ class BridgeClient(object):
 
 		self.load_access_token()
 
-	def load_access_token(self, force=True):
+	def load_access_token(self, force=False):
 		post_data = {'client_id':self.client_id,
 		             'client_secret':self.client_secret,
 		             'auth_uri':self.auth_uri,
 		             'token_uri':self.token_uri,
-		             'scope':self.scope,
-		             'force_new_access':force
+		             'scope':self.scope
 		}
+		if force:
+			post_data['force_new_access'] = 1
 		uri = self.bridge_uri
 		if uri[-6:] != '/token':
 			uri = uri + '/token'
