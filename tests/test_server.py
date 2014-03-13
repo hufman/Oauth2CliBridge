@@ -429,7 +429,7 @@ class TestServerManually:
 		access_token_data = handler.access_token(record, self.args['client_secret'])
 		assert_equal(access_token, access_token_data['access_token'])
 		# try getting access token again
-		self.args['force_new_access'] = True
+		self.args['force_new_access'] = 'True'
 		self.handler.token(self.args)	# should get previous access
 		access_token_data = handler.access_token(record, self.args['client_secret'])
 		assert_not_equal(access_token, access_token_data['access_token'])

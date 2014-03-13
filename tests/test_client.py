@@ -45,6 +45,11 @@ class TestClientManually:
 	def setup(self):
 		client_id,client_secret = self.generate_client()
 		self.args = self.generate_args(client_id, client_secret)
+	def teardown(self):
+		requests.delete('http://127.0.0.1:9873/client', \
+		                data={'client_id':self.args['client_id'],
+		                      'client_secret':self.args['client_secret']})
+		self.delete_auths()
 
 	@staticmethod
 	def generate_client():
@@ -64,6 +69,27 @@ class TestClientManually:
 		}
 		return args
 
+	def convert_bridge_link(self, link):
+		""" Given a regular link to the bridge
+		    make sure it points to the actual bridge
+		"""
+		linkparts = urlparse.urlparse(link)
+		testparts = urlparse.urlparse(self.args['bridge_uri'])
+		url = urlparse.urlunparse((testparts[0], testparts[1], linkparts[2], linkparts[3], linkparts[4], linkparts[5]))
+		return url
+
+	def delete_auths(self):
+		""" Deletes any authorizations of this client_id in the bridge """
+		url = self.args['bridge_uri']
+		parsed = urlparse.urlparse(url)
+		url = urlparse.urlunparse((parsed[0],parsed[1],'','','client_id='+self.args['client_id'],''))
+		r = requests.get(url, verify=False)
+		linkre = re.compile('<a\s+href="(.*?delete.*?)"')
+		for link in linkre.finditer(r.text):
+			link = link.group(1)
+			link = self.convert_bridge_link(link)
+			resp = requests.get(link, verify=False, allow_redirects=False)
+
 	@staticmethod
 	def validate_access(access_token):
 		validate_url = 'http://127.0.0.1:9873/validate?access_token=%s'%(urllib.quote(access_token),)
@@ -77,15 +103,26 @@ class TestClientManually:
 		klass.bridge.terminate()
 		klass.server.terminate()
 
-	@staticmethod
-	def click_auth(url):
+	def click_auth(self, url):
+		url = self.convert_bridge_link(url)
 		r = requests.get(url, verify=False)
 		linkre = re.compile('<a\s+href="(.*?try_auth.*?)"')
 		match = linkre.search(r.text)
 		if match:
 			link = match.group(1)
 			link = urlparse.urljoin(url, link)
-		requests.get(link, verify=False)
+		else:
+			print("Could not find try_auth link in page %s:\n%s"%(url,r.text))
+		assert_true(match)
+		# click on try_auth link
+		link = self.convert_bridge_link(link)
+		resp = requests.get(link, verify=False, allow_redirects=False)
+		# follow redirect from oauth server
+		link = resp.headers['Location']
+		resp = requests.get(link, verify=False, allow_redirects=False)
+		# finish redirect
+		link = self.convert_bridge_link(resp.headers['Location'])
+		requests.get(link, verify=False, allow_redirects=False)
 
 	def test_create_client(self):
 		try:
