@@ -46,8 +46,6 @@ class BridgeClient(object):
 			self.access_token = data['access_token']
 			if 'expires_in' in data:
 				self.expiration = time.time() + int(data['expires_in'])
-		elif handle.status_code == 400:
-			raise KeyError(handle.text)
 		elif int(handle.status_code/100) == 4 and 'Location' in handle.headers:
 			raise NeedsAuthentication(handle.headers['Location'])
 		else:

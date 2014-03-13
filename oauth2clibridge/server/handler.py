@@ -17,6 +17,10 @@ from oauth2clibridge.server.encryption import encrypt, decrypt, hash_sha1_64
 import logging
 logger = logging	# default until main overrides
 
+class FailedToTradein(Exception):
+	def __init__(self, message):
+		self.message = message
+
 # Utility functions
 def get_token(size=24):
 	choices = string.ascii_letters + string.digits
@@ -170,14 +174,13 @@ class Oauth2Handler():
 		r = requests.post(record.token_uri, data=data)
 		record.auth_code = None
 		if int(r.status_code / 100) == 2:
-			logger.debug("Successfully received access info for %s"%(record.client_id,))
+			logger.debug("Received access info for %s"%(record.client_id,))
 			try:
 				token_data = r.json()
 			except ValueError as e:
 				token_data = urlparse.parse_qs(r.text)
 				token_data = dict([(k,v[0]) for k,v in token_data.items()])
 		else:
-			logger.warning("Errored response for access info for %s:\n%s"%(record.client_id,r.text))
 			token_data = None
 		if token_data is not None and 'error' not in token_data:
 			self.parse_access_token(record, client_secret, token_data)
@@ -188,6 +191,8 @@ class Oauth2Handler():
 			record.access_token = None
 			record.access_sha1 = None
 			record.access_exp = None
+			self.db.commit()
+			return FailedToTradein(r.text)
 		self.db.commit()
 		return record
 
@@ -339,8 +344,11 @@ class Oauth2Handler():
 
 		# use any auth codes to get access and refresh codes
 		auth_results, good_results = results_by_auth_code(good_results)
+		failure = None
 		for result in auth_results:
-			self.tradein_auth_code(result, client_secret)
+			ret = self.tradein_auth_code(result, client_secret)
+			if isinstance(ret, FailedToTradein):
+				failure = ret	# save in case others don't work
 			if result.access_token is None:		# failed to refresh
 				good_results.append(result)
 			else:
@@ -350,6 +358,8 @@ class Oauth2Handler():
 					return data
 				else:
 					good_results.append(result)
+		if failure:
+			return failure.message, 400
 
 		if len(good_results) == 0:	# create a request for this
 			logger.info("Created request for "+client_id)
@@ -360,5 +370,8 @@ class Oauth2Handler():
 			record.scope = args['scope']
 			self.db.add(record)
 			self.db.commit()
+		else:			# found a request, but couldn't use it
+			if any([x.access_token != None for x in good_results]):
+				return "Existing Oauth2 connections could not be used, check client_secret", 400
 		return None
 
