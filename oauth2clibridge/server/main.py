@@ -2,6 +2,7 @@
 
 from flask import Flask, request, session, g, abort, jsonify, redirect, render_template, url_for
 from sqlalchemy import create_engine, sql
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker, scoped_session
 from jinja2 import Markup
 import urllib
@@ -28,7 +29,11 @@ handler.logger = app.logger
 
 # Database interactions
 DEBUG_DB = False
-engine = create_engine(app.config['DATABASE_URI'], echo=DEBUG_DB)
+if 'sqlite' in app.config['DATABASE_URI'] and \
+   ':memory:' in app.config['DATABASE_URI']:
+	engine = create_engine(app.config['DATABASE_URI'], echo=DEBUG_DB, poolclass=StaticPool)
+else:
+	engine = create_engine(app.config['DATABASE_URI'], echo=DEBUG_DB)
 db_session = scoped_session(sessionmaker(bind=engine))
 
 def create_db():
