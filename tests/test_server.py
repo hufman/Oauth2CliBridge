@@ -547,3 +547,24 @@ class TestServerManually:
 		assert_equal(None, record.auth_code)
 		assert_equal(None, record.refresh_token)
 		assert_equal(None, record.access_token)
+
+	def test_scope(self):
+		self.args['scope'] = 'email username'
+		self.handler.token(self.args)	# creates record
+		records = self.handler.get_records(self.args['client_id'])
+		assert_equal(1, len(handler.results_by_matching_scope(records, 'email username')), 'same scope')
+		assert_equal(1, len(handler.results_by_matching_scope(records, 'username email')), 'rearranged scope')
+		assert_equal(1, len(handler.results_by_matching_scope(records, u'email username')), 'same scope, unicode')
+		assert_equal(1, len(handler.results_by_matching_scope(records, 'email,username')), 'different separator')
+		assert_equal(1, len(handler.results_by_matching_scope(records, 'email')), 'sub scope')
+		assert_equal(0, len(handler.results_by_matching_scope(records, 'email password')), 'bigger scope')
+
+	def test_unicode_scope(self):
+		self.args['scope'] = u'email username'
+		self.handler.token(self.args)	# creates record
+		records = self.handler.get_records(self.args['client_id'])
+		assert_equal(1, len(handler.results_by_matching_scope(records, 'email username')), 'same scope')
+		assert_equal(1, len(handler.results_by_matching_scope(records, 'username email')), 'rearranged scope')
+		assert_equal(1, len(handler.results_by_matching_scope(records, 'email,username')), 'different separator')
+		assert_equal(1, len(handler.results_by_matching_scope(records, 'email')), 'sub scope')
+		assert_equal(0, len(handler.results_by_matching_scope(records, 'email password')), 'bigger scope')

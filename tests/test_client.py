@@ -176,3 +176,31 @@ class TestClientManually:
 		assert_true(self.validate_access(c.access_token))
 		r = c.requests.get(self.args['validate_uri'])
 		assert_equal(200, r.status_code)
+
+	def test_scope_tests(self):
+		self.args['scope'] = 'email username'
+		try:
+			c = BridgeClient(self.args['bridge_uri'], self.args['client_id'], self.args['client_secret'], self.args['auth_uri'], self.args['token_uri'], self.args['scope'])
+			fail("Didn't crash when getting initial client")
+		except NeedsAuthentication as e:
+			url = e.location
+		self.click_auth(url)
+		# should not fail now
+		c = BridgeClient(self.args['bridge_uri'], self.args['client_id'], self.args['client_secret'], self.args['auth_uri'], self.args['token_uri'], self.args['scope'])
+		# should not fail with less scopes
+		self.args['scope'] = 'email'
+		c = BridgeClient(self.args['bridge_uri'], self.args['client_id'], self.args['client_secret'], self.args['auth_uri'], self.args['token_uri'], self.args['scope'])
+		# should still work with original scope, in different order
+		self.args['scope'] = 'username email'
+		c = BridgeClient(self.args['bridge_uri'], self.args['client_id'], self.args['client_secret'], self.args['auth_uri'], self.args['token_uri'], self.args['scope'])
+		# should still work with original scope, with commas
+		self.args['scope'] = 'username,email'
+		c = BridgeClient(self.args['bridge_uri'], self.args['client_id'], self.args['client_secret'], self.args['auth_uri'], self.args['token_uri'], self.args['scope'])
+
+		# should fail with bigger scope
+		self.args['scope'] = 'email password'
+		try:
+			c = BridgeClient(self.args['bridge_uri'], self.args['client_id'], self.args['client_secret'], self.args['auth_uri'], self.args['token_uri'], self.args['scope'])
+			fail("Didn't crash when getting bigger client")
+		except NeedsAuthentication as e:
+			url = e.location

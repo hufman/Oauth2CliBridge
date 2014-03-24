@@ -28,10 +28,20 @@ def get_token(size=24):
 
 def results_by_matching_scope(results, scope):
 	good_results = []
-	query_scopes = scope.split(',')
+	comma_splitted = scope.split(',')
+	space_splitted = scope.split()
+	if len(comma_splitted) > len(space_splitted):
+		query_scopes = comma_splitted
+	else:
+		query_scopes = space_splitted
 	query_scopes = [x.strip() for x in query_scopes]
 	for result in results:
-		result_scopes = result.scope.split(',')
+		comma_splitted = result.scope.split(',')
+		space_splitted = result.scope.split()
+		if len(comma_splitted) > len(space_splitted):
+			result_scopes = comma_splitted
+		else:
+			result_scopes = space_splitted
 		result_scopes = [x.strip() for x in result_scopes]
 		diff = set(query_scopes) - set(result_scopes)
 		if len(diff) == 0:	# this result has all of the scopes
