@@ -84,7 +84,7 @@ class TestClientManually:
 		parsed = urlparse.urlparse(url)
 		url = urlparse.urlunparse((parsed[0],parsed[1],'','','client_id='+self.args['client_id'],''))
 		r = requests.get(url, verify=False)
-		linkre = re.compile('<a\s+href="(.*?delete.*?)"')
+		linkre = re.compile('<a\s+href="([^"]*?delete[^"]*?)"')
 		for link in linkre.finditer(r.text):
 			link = link.group(1)
 			link = self.convert_bridge_link(link)
@@ -106,7 +106,7 @@ class TestClientManually:
 	def click_auth(self, url):
 		url = self.convert_bridge_link(url)
 		r = requests.get(url, verify=False)
-		linkre = re.compile('<a\s+href="(.*?try_auth.*?)"')
+		linkre = re.compile('<a\s+href="([^"]*?try_auth[^"]*?)"')
 		match = linkre.search(r.text)
 		if match:
 			link = match.group(1)
